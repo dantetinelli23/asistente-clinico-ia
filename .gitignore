@@ -1,0 +1,24 @@
+# Entorno virtual (se regenera, nunca se sube)
+venv/
+
+# Secretos y variables de entorno (JAMÁS al repo)
+.env
+
+# Cache de Python
+__pycache__/
+*.pyc
+
+# Bases de datos locales
+*.db
+*.sqlite3
+*.sqlite3-*
+
+# Índices vectoriales locales (se regeneran)
+db_recursivo/
+db_semantico/
+faiss_index/
+chroma_db/
+
+# Logs y archivos del sistema
+*.log
+.DS_Store
