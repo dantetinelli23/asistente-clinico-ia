@@ -1,0 +1,15 @@
+# --- RAG: carga, chunking, embeddings, base vectorial, busqueda hibrida y reranking ---
+langchain
+langchain-classic
+langchain-community
+langchain-cohere
+langchain-chroma
+langchain-experimental
+chromadb
+rank-bm25
+pypdf
+python-dotenv
+# --- Parseo local de PDF a Markdown limpio ---
+pymupdf4llm
+# --- Generacion con LLM ---
+langchain-google-genai
