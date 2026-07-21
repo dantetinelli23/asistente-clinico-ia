@@ -13,3 +13,5 @@ python-dotenv
 pymupdf4llm
 # --- Generacion con LLM ---
 langchain-google-genai
+
+mcp[cli]
