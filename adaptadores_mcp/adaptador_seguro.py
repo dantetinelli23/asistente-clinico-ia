@@ -2,6 +2,9 @@ import sqlite3
 import re
 from pathlib import Path
 from datetime import datetime
+from langsmith import traceable
+from dotenv import load_dotenv
+load_dotenv()
 
 RUTA_BASE = Path(__file__).parent / "pacientes.db"
 RUTA_AUDITORIA = Path(__file__).parent / "auditoria.log"
@@ -15,14 +18,14 @@ PERMISOS = {
 
 CAMPOS_PII = ["nombre", "dni", "telefono"]
 
-
+@traceable(name="validar_paciente")
 def validar(patient_id):
     """Gesto 1: el pedido tiene forma válida y no es un ataque."""
     if not isinstance(patient_id, int) or patient_id <= 0:
         raise ValueError(f"ID de paciente inválido: {patient_id!r}")
     return patient_id
 
-
+@traceable(name="autorizar_paciente")
 def autorizar(usuario):
     """Gesto 2: este profesional tiene permiso para ver fichas."""
     permiso = PERMISOS.get(usuario, {})
@@ -30,7 +33,7 @@ def autorizar(usuario):
         raise PermissionError(f"El usuario {usuario!r} no está autorizado a ver pacientes.")
     return usuario
 
-
+@traceable(name="ejecutar_consulta_bd")
 def ejecutar(patient_id):
     """Gesto 3: leer de la base en modo SOLO LECTURA."""
     conexion = sqlite3.connect(f"file:{RUTA_BASE}?mode=ro", uri=True)
@@ -43,7 +46,7 @@ def ejecutar(patient_id):
         raise LookupError(f"No existe paciente con id {patient_id}.")
     return dict(fila)
 
-
+@traceable(name="sanitizar_pii")
 def sanitizar(ficha):
     """Gesto 4: tachar la PII antes de que el dato salga hacia el LLM."""
     ficha_limpia = dict(ficha)
@@ -52,7 +55,7 @@ def sanitizar(ficha):
             ficha_limpia[campo] = "[DATO PROTEGIDO]"
     return ficha_limpia
 
-
+@traceable(name="auditar_acceso")
 def auditar(usuario, patient_id, resultado):
     """Gesto 5: dejar registro de quién pidió qué y cuándo."""
     momento = datetime.now().isoformat(timespec="seconds")
@@ -60,7 +63,7 @@ def auditar(usuario, patient_id, resultado):
     with open(RUTA_AUDITORIA, "a", encoding="utf-8") as archivo:
         archivo.write(linea)
 
-
+@traceable(name="consultar_paciente_orquestador")
 def consultar_paciente(usuario, patient_id):
     """El archivista completo: los cinco gestos en orden."""
     try:

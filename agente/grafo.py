@@ -12,9 +12,11 @@ from agente.estado import EstadoConsulta
 from langchain_core.prompts import ChatPromptTemplate
 from agente.llm_seguro import invocar_llm
 
+
 # --- CONSTANTES DE SEGURIDAD ---
 MAX_LARGO_PREGUNTA = 500   # recortamos preguntas absurdamente largas
-
+MAX_INTENTOS = 2
+UMBRAL_CONFIANZA = 0.7
 # Patrones de "inyeccion de prompt": intentos de manipular al asistente
 # para que ignore sus instrucciones. Adaptado de tu Practica 10.
 PATRONES_SOSPECHOSOS = [

@@ -7,13 +7,13 @@ from agente.grafo import grafo
 # Damos SOLO los campos que el grafo necesita para arrancar; el resto
 # de la ficha se va completando sola a medida que pasa por los nodos.
 entrada = {
-    "consulta_id": "consulta-001",
+    "consulta_id": "caso2-diabetes-repeticion-3",
     "pregunta": "¿cuál es el tratamiento para la diabetes tipo 1?",
     "intentos": 0,
 }
 
 # --- La configuracion de la sesion (para la memoria) ---
-config = {"configurable": {"thread_id": "sesion-001"}}
+config = {"configurable": {"thread_id": "sesion-caso2-rep3"}}
 
 # --- Ejecutar el grafo ---
 resultado = grafo.invoke(entrada, config=config)
