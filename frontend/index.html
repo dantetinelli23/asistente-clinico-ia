@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Asistente Clínico IA</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked@18.0.6/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dompurify@3.4.12/dist/purify.min.js"></script>
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --color-primary: #1a365d;
+      --color-accent: #2b6cb0;
+      --color-bg: #f7fafc;
+      --color-surface: #ffffff;
+      --color-border: #e2e8f0;
+      --color-error-bg: #fff5f5;
+      --color-error-border: #fc8181;
+      --color-error-text: #c53030;
+      --color-urgency-bg: #fed7d7;
+      --color-urgency-border: #fc8181;
+      --color-urgency-text: #9b2c2c;
+      --color-abstention-bg: #bee3f8;
+      --color-abstention-border: #63b3ed;
+      --color-abstention-text: #2a4365;
+      --color-confidence-bg: #c6f6d5;
+      --color-confidence-text: #276749;
+      --color-muted: #718096;
+      --color-text: #2d3748;
+      --color-text-light: #a0aec0;
+      --radius: 8px;
+      --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--color-bg);
+      color: var(--color-text);
+      line-height: 1.6;
+      padding: 1rem;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      padding: 2rem 0 1.5rem;
+    }
+
+    header h1 {
+      color: var(--color-primary);
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      color: var(--color-muted);
+      font-size: 0.875rem;
+      margin-top: 0.25rem;
+    }
+
+    .card {
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .card-header {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--color-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 0.75rem;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 0.75rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius);
+      font-size: 0.9375rem;
+      font-family: inherit;
+      line-height: 1.5;
+      color: var(--color-text);
+      resize: vertical;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    textarea:focus {
+      outline: none;
+      border-color: var(--color-accent);
+      box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.15);
+    }
+
+    textarea::placeholder {
+      color: var(--color-text-light);
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.75rem;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1.5rem;
+      background: var(--color-accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 0.9375rem;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    button:hover:not(:disabled) {
+      background: #1a4f8b;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .spinner {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--color-muted);
+      font-size: 0.875rem;
+    }
+
+    .spinner.active {
+      display: inline-flex;
+    }
+
+    .spinner-icon {
+      width: 18px;
+      height: 18px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Banners */
+    .banner {
+      padding: 0.875rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid;
+      margin-bottom: 1rem;
+      font-size: 0.9375rem;
+      display: none;
+    }
+
+    .banner.active {
+      display: block;
+    }
+
+    .banner-urgency {
+      background: var(--color-urgency-bg);
+      border-color: var(--color-urgency-border);
+      color: var(--color-urgency-text);
+      font-weight: 600;
+    }
+
+    .banner-abstention {
+      background: var(--color-abstention-bg);
+      border-color: var(--color-abstention-border);
+      color: var(--color-abstention-text);
+    }
+
+    .banner-error {
+      background: var(--color-error-bg);
+      border-color: var(--color-error-border);
+      color: var(--color-error-text);
+    }
+
+    /* Response area */
+    .response-area {
+      display: none;
+    }
+
+    .response-area.active {
+      display: block;
+    }
+
+    .respuesta-content {
+      line-height: 1.75;
+      font-size: 0.9375rem;
+    }
+
+    .respuesta-content p {
+      margin-bottom: 0.75rem;
+    }
+
+    .respuesta-content ul,
+    .respuesta-content ol {
+      margin-bottom: 0.75rem;
+      padding-left: 1.5rem;
+    }
+
+    .respuesta-content li {
+      margin-bottom: 0.25rem;
+    }
+
+    .respuesta-content strong {
+      font-weight: 600;
+    }
+
+    .respuesta-content h1,
+    .respuesta-content h2,
+    .respuesta-content h3,
+    .respuesta-content h4 {
+      color: var(--color-primary);
+      margin: 1.25rem 0 0.5rem;
+    }
+
+    .respuesta-content h1 { font-size: 1.25rem; }
+    .respuesta-content h2 { font-size: 1.125rem; }
+    .respuesta-content h3 { font-size: 1rem; }
+
+    .respuesta-content code {
+      background: #edf2f7;
+      padding: 0.125rem 0.375rem;
+      border-radius: 3px;
+      font-size: 0.875em;
+    }
+
+    .respuesta-content pre {
+      background: #edf2f7;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius);
+      overflow-x: auto;
+      margin-bottom: 0.75rem;
+    }
+
+    .respuesta-content pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .respuesta-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .confianza-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.625rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .confianza-high {
+      background: #c6f6d5;
+      color: #276749;
+    }
+
+    .confianza-medium {
+      background: #fefcbf;
+      color: #975a16;
+    }
+
+    .confianza-low {
+      background: #fed7d7;
+      color: #9b2c2c;
+    }
+
+    .confianza-na {
+      background: #edf2f7;
+      color: var(--color-muted);
+    }
+
+    .consulta-id {
+      font-size: 0.75rem;
+      color: var(--color-text-light);
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--color-border);
+    }
+
+    footer {
+      text-align: center;
+      padding: 2rem 0;
+      color: var(--color-text-light);
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 480px) {
+      body { padding: 0.75rem; }
+      .card { padding: 1rem; }
+      header h1 { font-size: 1.25rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Asistente Clínico IA</h1>
+      <p>Sistema de apoyo a decisiones clínicas</p>
+    </header>
+
+    <div class="card">
+      <div class="card-header">Consulta clínica</div>
+      <textarea id="pregunta-input" placeholder="Escribí tu consulta clínica aquí…" rows="4"></textarea>
+      <div class="form-actions">
+        <button id="submit-btn" type="button">Enviar consulta</button>
+        <div class="spinner" id="spinner">
+          <div class="spinner-icon"></div>
+          <span id="spinner-text">Procesando consulta…</span>
+        </div>
+      </div>
+    </div>
+
+    <div id="response-area" class="response-area">
+      <div id="urgency-banner" class="banner banner-urgency" role="alert">
+        ⚠ URGENCIA — Se requiere evaluación médica inmediata
+      </div>
+
+      <div id="abstention-banner" class="banner banner-abstention">
+        El sistema no pudo generar una respuesta con suficiente confianza clínica. Esta consulta debe ser evaluada por un profesional.
+      </div>
+
+      <div id="error-banner" class="banner banner-error" role="alert"></div>
+
+      <div class="card" id="respuesta-card">
+        <div class="respuesta-meta">
+          <span id="confianza-badge" class="confianza-badge confianza-na">Sin valoración</span>
+        </div>
+        <div id="respuesta-content" class="respuesta-content"></div>
+        <div id="consulta-id-display" class="consulta-id"></div>
+      </div>
+    </div>
+
+    <footer>
+      Herramienta de apoyo — no reemplaza el juicio clínico profesional
+    </footer>
+  </div>
+
+  <script>
+    let isFirstRequest = true;
+
+    var elements = {
+      input: document.getElementById('pregunta-input'),
+      submitBtn: document.getElementById('submit-btn'),
+      spinner: document.getElementById('spinner'),
+      spinnerText: document.getElementById('spinner-text'),
+      responseArea: document.getElementById('response-area'),
+      respuestaContent: document.getElementById('respuesta-content'),
+      confianzaBadge: document.getElementById('confianza-badge'),
+      consultaIdDisplay: document.getElementById('consulta-id-display'),
+      urgencyBanner: document.getElementById('urgency-banner'),
+      abstentionBanner: document.getElementById('abstention-banner'),
+      errorBanner: document.getElementById('error-banner')
+    };
+
+    function hideAllBanners() {
+      elements.urgencyBanner.classList.remove('active');
+      elements.abstentionBanner.classList.remove('active');
+      elements.errorBanner.classList.remove('active');
+    }
+
+    function showLoading() {
+      elements.submitBtn.disabled = true;
+      elements.spinnerText.textContent = isFirstRequest
+        ? 'Iniciando motor clínico…'
+        : 'Procesando consulta…';
+      elements.spinner.classList.add('active');
+      isFirstRequest = false;
+    }
+
+    function hideLoading() {
+      elements.submitBtn.disabled = false;
+      elements.spinner.classList.remove('active');
+    }
+
+    function renderConfianzaBadge(confianza) {
+      if (confianza === null || confianza === undefined) {
+        elements.confianzaBadge.textContent = 'Sin valoración';
+        elements.confianzaBadge.className = 'confianza-badge confianza-na';
+        return;
+      }
+
+      var pct = Math.round(confianza * 100);
+      var level, label;
+
+      if (confianza >= 0.7) {
+        level = 'confianza-high';
+        label = 'Confianza: ' + pct + '%';
+      } else if (confianza >= 0.4) {
+        level = 'confianza-medium';
+        label = 'Confianza: ' + pct + '%';
+      } else if (confianza >= 0) {
+        level = 'confianza-low';
+        label = 'Confianza: ' + pct + '%';
+      } else {
+        level = 'confianza-na';
+        label = 'Sin valoración';
+      }
+
+      elements.confianzaBadge.textContent = label;
+      elements.confianzaBadge.className = 'confianza-badge ' + level;
+    }
+
+    function showError(message) {
+      hideAllBanners();
+      elements.respuestaContent.innerHTML = '';
+      elements.consultaIdDisplay.textContent = '';
+      elements.errorBanner.textContent = message;
+      elements.errorBanner.classList.add('active');
+      elements.responseArea.classList.add('active');
+    }
+
+    function displaySuccess(data) {
+      hideAllBanners();
+
+      if (data.urgencia) {
+        elements.urgencyBanner.classList.add('active');
+      }
+
+      if (data.motivo_parada === 'confianza_insuficiente') {
+        elements.abstentionBanner.classList.add('active');
+      }
+
+      if (data.respuesta) {
+        var html = marked.parse(data.respuesta);
+        var safeHtml = DOMPurify.sanitize(html);
+        elements.respuestaContent.innerHTML = safeHtml;
+      } else {
+        elements.respuestaContent.innerHTML = '';
+      }
+
+      renderConfianzaBadge(data.confianza);
+
+      elements.consultaIdDisplay.textContent = data.consulta_id
+        ? 'ID: ' + data.consulta_id
+        : '';
+
+      elements.responseArea.classList.add('active');
+      hideLoading();
+    }
+
+    function displayServerError(status) {
+      if (status === 422) {
+        showError('La consulta debe contener una pregunta.');
+      } else if (status === 503) {
+        showError('El servicio no pudo procesar la consulta. Intentá nuevamente en unos minutos.');
+      } else {
+        showError('Error inesperado (' + status + '). Intentá nuevamente.');
+      }
+      hideLoading();
+    }
+
+    function displayNetworkError() {
+      showError('Error de conexión: no se pudo conectar con el servidor.');
+      hideLoading();
+    }
+
+    function handleSubmit() {
+      var pregunta = elements.input.value.trim();
+
+      if (!pregunta) {
+        showError('La consulta debe contener una pregunta.');
+        return;
+      }
+
+      showLoading();
+      hideAllBanners();
+      elements.responseArea.classList.remove('active');
+
+      fetch('/consulta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pregunta: pregunta })
+      })
+      .then(function (response) {
+        if (response.ok) {
+          return response.json().then(displaySuccess);
+        }
+
+        return response.json().then(function (errBody) {
+          if (errBody && errBody.detail) {
+            if (response.status === 422) {
+              showError(errBody.detail);
+            } else if (response.status === 503) {
+              showError(errBody.detail);
+            } else {
+              showError(errBody.detail);
+            }
+            hideLoading();
+          } else {
+            displayServerError(response.status);
+          }
+        }).catch(function () {
+          displayServerError(response.status);
+        });
+      })
+      .catch(function () {
+        displayNetworkError();
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      elements.submitBtn.addEventListener('click', handleSubmit);
+
+      elements.input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          handleSubmit();
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -9,7 +9,7 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from retrieval.buscador import buscar_protocolos
 import re
 from agente.estado import EstadoConsulta
-from langchain_core.prompts import ChatPromptTemplate
+from orquestacion.cadena_generacion import plantilla_generacion, AVISO_URGENCIA
 from agente.llm_seguro import invocar_llm
 
 
@@ -92,32 +92,6 @@ CONSULTA:
 def nodo_recuperar(state: EstadoConsulta):
     documentos = buscar_protocolos(state["pregunta"])
     return {"documentos": documentos}
-
-# --- PROMPT DE GENERACION (los 7 bloques, de la Fase 2) ---
-plantilla_generacion = ChatPromptTemplate.from_messages([
-    ("system",
-     "## ROL\n"
-     "Sos un asistente clinico de apoyo a la decision, para uso EXCLUSIVO "
-     "de profesionales de salud. NO te dirigis a pacientes.\n\n"
-     "## FUENTE DE VERDAD\n"
-     "Tu unica fuente es el CONTEXTO de abajo, de guias clinicas oficiales. "
-     "No uses conocimiento medico propio: si no esta en el CONTEXTO, no lo afirmes.\n\n"
-     "## REGLAS\n"
-     "1. Basate UNICAMENTE en el CONTEXTO. Nunca inventes.\n"
-     "2. Si el CONTEXTO no alcanza, deci: 'La guia disponible no cubre esto con precision'.\n"
-     "3. Citá valores, umbrales y dosis EXACTAMENTE como figuran.\n"
-     "4. Si hay distintos umbrales segun metodo o perfil, distinguilos.\n\n"
-     "## FORMATO\n"
-     "Respondé en español rioplatense profesional, claro y directo, sin relleno.\n\n"
-     "CONTEXTO:\n{contexto}"),
-    ("human", "{pregunta}"),
-])
-
-# El texto del aviso que se antepone cuando el triage detecto urgencia.
-AVISO_URGENCIA = (
-    "⚠ CONSULTA CLASIFICADA COMO POTENCIALMENTE URGENTE. "
-    "Priorizar evaluacion. Protocolo de referencia a continuacion:\n\n"
-)
 
 
 # --- NODO 4: generar la respuesta ---

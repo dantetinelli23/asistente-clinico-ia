@@ -6,10 +6,11 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from langchain_cohere import CohereEmbeddings, CohereRerank
+from langchain_cohere import CohereEmbeddings
 from langchain_chroma import Chroma
 from langchain_community.retrievers import BM25Retriever
-from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
+from langchain_classic.retrievers import EnsembleRetriever
+from ranking.reranker import aplicar_reranking
 
 # --- SE ARMA UNA SOLA VEZ (al importar este archivo) ---
 
@@ -27,11 +28,7 @@ buscador_hibrido = EnsembleRetriever(
     weights=[0.5, 0.5],
 )
 
-reranker = CohereRerank(model="rerank-v3.5", top_n=3)
-buscador_final = ContextualCompressionRetriever(
-    base_compressor=reranker,
-    base_retriever=buscador_hibrido,
-)
+buscador_final = aplicar_reranking(buscador_hibrido, top_n=3)
 
 
 # --- SE USA EN CADA LLAMADA ---
